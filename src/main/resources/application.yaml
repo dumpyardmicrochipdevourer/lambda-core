@@ -2,6 +2,8 @@ spring:
   application.name: lambda-core
   # prevents put body from being eaten as form params // whatever
   mvc.formcontent.filter.enabled: false
+  # async http requests default 30s container timeout overwrite
+  mvc.async.request-timeout: -1
   datasource:
     url: ${LAMBDA_DB_URL:jdbc:postgresql://localhost:5432/lambda}
     username: ${LAMBDA_DB_USER:lambda}

@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestController
 @RequestMapping("/api/share")
@@ -108,6 +109,23 @@ public class ShareController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
                 .header("X-Content-Type-Options", "nosniff")
                 .body(region);
+    }
+
+    // (╥﹏╥) (╥﹏╥) (╥﹏╥) (╥﹏╥) (╥﹏╥)
+    @GetMapping("/{code}/archive")
+    public ResponseEntity<StreamingResponseBody> archive(@PathVariable String code) {
+        // runs before the async body starts — headers are already committed by
+        // then so a missing code needs to fail here to still come back as 404
+        Share share = shareService.get(code);
+        StreamingResponseBody body = out -> shareService.writeArchive(share, out);
+
+        String disposition = ContentDisposition.attachment().filename(share.getCode() + ".zip", StandardCharsets.UTF_8)
+                .build().toString();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "application/zip")
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
+                .body(body);
     }
 
     @ExceptionHandler(ShareNotFoundException.class)
