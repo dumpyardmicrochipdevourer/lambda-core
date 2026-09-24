@@ -12,6 +12,7 @@ import com.microchip.lambda_core.service.util.ShareCodeGenerator;
 import com.microchip.lambda_core.storage.ShareStorage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -79,6 +80,11 @@ public class ShareService {
     public List<ShareFile> listFiles(String code) {
         Share share = liveShare(code);
         return shareFileRepository.findByShareId(share.getId());
+    }
+
+    public void writeArchive(Share share, OutputStream out) throws IOException {
+        List<ShareFile> files = shareFileRepository.findByShareId(share.getId());
+        storage.writeArchive(share.getId(), files, out);
     }
 
     public ShareFileResource getFile(String code, UUID fileId) {

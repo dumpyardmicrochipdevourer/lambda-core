@@ -1,5 +1,7 @@
 package com.microchip.lambda_core.storage;
 
+import com.microchip.lambda_core.domain.FileStatus;
+import com.microchip.lambda_core.domain.ShareFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -8,7 +10,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
+import java.util.zip.Deflater;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -49,6 +55,20 @@ public class ShareStorage {
 
     public Path locate(UUID shareId, UUID fileId) {
         return root.resolve(shareId.toString()).resolve(fileId.toString());
+    }
+
+    public void writeArchive(UUID shareId, List<ShareFile> files, OutputStream out) throws IOException {
+        try (ZipOutputStream zip = new ZipOutputStream(out)) {
+            zip.setLevel(Deflater.NO_COMPRESSION);
+            for (ShareFile file : files) {
+                if (file.getStatus() != FileStatus.COMPLETE) {
+                    continue;
+                }
+                zip.putNextEntry(new ZipEntry(file.getName()));
+                Files.copy(locate(shareId, file.getId()), zip);
+                zip.closeEntry();
+            }
+        }
     }
 
     public void deleteShareDir(UUID shareId) throws IOException {
