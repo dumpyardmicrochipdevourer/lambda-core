@@ -61,7 +61,11 @@ public class ShareService {
         try {
             written = storage.write(share.getId(), file.getId(), body);
         } catch (IOException e) {
+            shareFileRepository.delete(file);
             throw new UncheckedIOException(e);
+        } catch (RuntimeException e) {
+            shareFileRepository.delete(file);
+            throw e;
         }
 
         file.markComplete(written);
