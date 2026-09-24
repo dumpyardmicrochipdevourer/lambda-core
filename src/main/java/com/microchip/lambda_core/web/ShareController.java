@@ -10,6 +10,7 @@ import com.microchip.lambda_core.domain.dto.ShareView;
 import com.microchip.lambda_core.service.ShareService;
 import com.microchip.lambda_core.service.exceptions.ShareFileNotFoundException;
 import com.microchip.lambda_core.service.exceptions.ShareNotFoundException;
+import com.microchip.lambda_core.storage.FileTooLargeException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -122,5 +123,10 @@ public class ShareController {
     @ExceptionHandler(IllegalArgumentException.class)
     ProblemDetail handleBadRequest(IllegalArgumentException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    @ExceptionHandler(FileTooLargeException.class)
+    ProblemDetail handleTooLarge(FileTooLargeException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage());
     }
 }

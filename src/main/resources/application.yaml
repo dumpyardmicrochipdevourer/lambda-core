@@ -1,5 +1,7 @@
 spring:
   application.name: lambda-core
+  # prevents put body from being eaten as form params // whatever
+  mvc.formcontent.filter.enabled: false
   datasource:
     url: ${LAMBDA_DB_URL:jdbc:postgresql://localhost:5432/lambda}
     username: ${LAMBDA_DB_USER:lambda}
@@ -13,7 +15,10 @@ spring:
 
 server.port: ${LAMBDA_PORT:8080}
 
-lambda.storage.root: ${LAMBDA_STORAGE_ROOT:./data}
+lambda.storage:
+  root: ${LAMBDA_STORAGE_ROOT:./data}
+  # 2gb
+  max-file-bytes: ${LAMBDA_MAX_FILE_BYTES:2147483648}
 
 logging.level:
   com.microchip.lambda_core: INFO
