@@ -60,5 +60,10 @@ public class ShareFile {
     public Instant getCreatedAt() { return createdAt; }
 
     public void setReceivedBytes(long receivedBytes) { this.receivedBytes = receivedBytes; }
-    public void setStatus(FileStatus status) { this.status = status; }
+
+    public void markComplete(long sizeBytes) {
+        this.sizeBytes = sizeBytes;
+        this.receivedBytes = sizeBytes;
+        this.status = FileStatus.COMPLETE;
+    }
 }
