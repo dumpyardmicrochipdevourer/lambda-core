@@ -8,6 +8,7 @@ import com.microchip.lambda_core.domain.repo.ShareFileRepository;
 import com.microchip.lambda_core.domain.repo.ShareRepository;
 import com.microchip.lambda_core.service.exceptions.ShareFileNotFoundException;
 import com.microchip.lambda_core.service.exceptions.ShareNotFoundException;
+import com.microchip.lambda_core.service.util.FileNames;
 import com.microchip.lambda_core.service.util.ShareCodeGenerator;
 import com.microchip.lambda_core.storage.ShareStorage;
 import java.io.IOException;
@@ -54,9 +55,10 @@ public class ShareService {
     }
 
     public ShareFile uploadFile(String code, String name, String contentType, InputStream body) {
+        String clean = FileNames.validate(name);
         Share share = liveShare(code);
 
-        ShareFile file = shareFileRepository.save(new ShareFile(share.getId(), name, 0, contentType));
+        ShareFile file = shareFileRepository.saveAndFlush(new ShareFile(share.getId(), clean, 0, contentType));
 
         long written;
         try {

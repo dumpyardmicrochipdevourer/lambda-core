@@ -18,13 +18,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -86,29 +84,7 @@ public class ShareController {
             @PathVariable UUID fileId,
             @RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader) {
         ShareFileResource file = shareService.getFile(code, fileId);
-        FileSystemResource resource = new FileSystemResource(file.path());
-
-        ResourceRegion region;
-        HttpStatus status;
-        if (rangeHeader != null) {
-            HttpRange range = HttpRange.parseRanges(rangeHeader).get(0);
-            region = range.toResourceRegion(resource);
-            status = HttpStatus.PARTIAL_CONTENT;
-        } else {
-            region = new ResourceRegion(resource, 0, file.sizeBytes());
-            status = HttpStatus.OK;
-        }
-
-        String contentType = file.contentType() != null ? file.contentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
-        String disposition = ContentDisposition.attachment().filename(file.name(), StandardCharsets.UTF_8)
-                .build().toString();
-
-        return ResponseEntity.status(status)
-                .header(HttpHeaders.ACCEPT_RANGES, "bytes")
-                .header(HttpHeaders.CONTENT_TYPE, contentType)
-                .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
-                .header("X-Content-Type-Options", "nosniff")
-                .body(region);
+        return Downloads.region(file.path(), file.name(), file.contentType(), file.sizeBytes(), rangeHeader);
     }
 
     // (╥﹏╥) (╥﹏╥) (╥﹏╥) (╥﹏╥) (╥﹏╥)
@@ -141,6 +117,11 @@ public class ShareController {
     @ExceptionHandler(IllegalArgumentException.class)
     ProblemDetail handleBadRequest(IllegalArgumentException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ProblemDetail handleDuplicate(DataIntegrityViolationException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "файл с таким именем уже есть");
     }
 
     @ExceptionHandler(FileTooLargeException.class)
