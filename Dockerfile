@@ -1,0 +1,18 @@
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /src
+COPY pom.xml .
+RUN mvn -q -B dependency:go-offline
+COPY src src
+RUN mvn -q -B -DskipTests package && cp target/*.jar /app.jar
+
+FROM eclipse-temurin:21-jre-alpine
+RUN addgroup -S app && adduser -S -G app app && mkdir -p /data && chown app:app /data
+COPY --from=build /app.jar /app/app.jar
+USER app
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+ENV LAMBDA_STORAGE_ROOT=/data
+VOLUME /data
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=3s --start-period=60s \
+  CMD wget -qO- http://127.0.0.1:8080/actuator/health || exit 1
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
