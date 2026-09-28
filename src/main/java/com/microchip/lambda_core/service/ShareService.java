@@ -81,7 +81,9 @@ public class ShareService {
 
     public List<ShareFile> listFiles(String code) {
         Share share = liveShare(code);
-        return shareFileRepository.findByShareId(share.getId());
+        return shareFileRepository.findByShareId(share.getId()).stream()
+                .filter(f -> f.getStatus() == FileStatus.COMPLETE)
+                .toList();
     }
 
     public void writeArchive(Share share, OutputStream out) throws IOException {

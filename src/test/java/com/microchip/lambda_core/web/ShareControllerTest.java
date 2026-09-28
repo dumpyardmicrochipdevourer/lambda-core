@@ -43,6 +43,14 @@ class ShareControllerTest extends IntegrationTest {
     }
 
     @Test
+    void failedUploadLeavesNothing() throws Exception {
+        String code = create(3600);
+        mvc.perform(put("/api/share/" + code + "/files/big.bin").content(new byte[501]));
+
+        mvc.perform(get("/api/share/" + code)).andExpect(jsonPath("$.files.length()").value(0));
+    }
+
+    @Test
     void sameNameTwiceIs409() throws Exception {
         String code = create(3600);
         mvc.perform(put("/api/share/" + code + "/files/a.txt").content(new byte[] {1})).andExpect(status().isCreated());
