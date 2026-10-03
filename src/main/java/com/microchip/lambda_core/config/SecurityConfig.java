@@ -35,7 +35,7 @@ public class SecurityConfig {
                         .bearerTokenResolver(tokenResolver)
                         .jwt(j -> j.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .authorizeHttpRequests(a -> a
-                        .requestMatchers("/actuator/health", "/api/share/**").permitAll()
+                        .requestMatchers("/actuator/health/**", "/actuator/prometheus", "/api/share/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
                         .requestMatchers("/api/feedback/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

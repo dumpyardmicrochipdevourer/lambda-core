@@ -33,6 +33,10 @@ lambda.storage:
   max-file-bytes: ${LAMBDA_MAX_FILE_BYTES:2147483648}
   # 2.5gb, the same for everyone
   quota-default-bytes: ${LAMBDA_QUOTA_DEFAULT_BYTES:2684354560}
+  # everything in the swap together, 5gb
+  share-total-bytes: ${LAMBDA_SHARE_TOTAL_BYTES:5368709120}
+  # uploads stop when the disk has less than this left, 1gb
+  min-free-bytes: ${LAMBDA_MIN_FREE_BYTES:1073741824}
 
 logging.level:
   com.microchip.lambda_core: INFO

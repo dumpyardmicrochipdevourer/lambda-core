@@ -46,7 +46,13 @@ removed. Downloads also accept the token as `?access_token=` so a plain link wor
 | GET | `/api/feedback` | admin | latest 200 |
 | POST | `/api/feedback/{id}/read` | admin | mark as read |
 
-`GET /actuator/health` is public.
+`GET /actuator/health` and `/actuator/prometheus` are open; put them on their own
+port with `LAMBDA_MANAGEMENT_PORT` so the gateway never serves them. Own metrics:
+`lambda_share_used_bytes`, `lambda_share_limit_bytes`, `lambda_disk_free_bytes`,
+`lambda_disk_floor_bytes`, `lambda_shares`, `lambda_personal_*`,
+`lambda_feedback_unread`, `lambda_uploaded_bytes_total{kind}`.
+
+A full swap or a disk below the floor answers 507.
 
 ## Configuration
 
@@ -58,6 +64,9 @@ removed. Downloads also accept the token as `?access_token=` so a plain link wor
 | `LAMBDA_STORAGE_ROOT` | `./data` (`/data` in the image) | |
 | `LAMBDA_MAX_FILE_BYTES` | 2 GiB | per file in the swap |
 | `LAMBDA_QUOTA_DEFAULT_BYTES` | 2.5 GiB | personal quota, the same for everyone |
+| `LAMBDA_SHARE_TOTAL_BYTES` | 5 GiB | everything in the swap together |
+| `LAMBDA_MIN_FREE_BYTES` | 1 GiB | uploads stop when the disk has less than this left |
+| `LAMBDA_MANAGEMENT_PORT` | same as `LAMBDA_PORT` | where `/actuator/health` and `/actuator/prometheus` are served |
 | `LAMBDA_AUTH_JWKS_URI` | `http://localhost:8081/.well-known/jwks.json` | |
 | `LAMBDA_AUTH_ISSUER` | `http://localhost:8081` | must equal lambda-auth's issuer |
 
