@@ -11,6 +11,8 @@ import com.microchip.lambda_core.service.ShareService;
 import com.microchip.lambda_core.service.exceptions.ShareFileNotFoundException;
 import com.microchip.lambda_core.service.exceptions.ShareNotFoundException;
 import com.microchip.lambda_core.storage.FileTooLargeException;
+import com.microchip.lambda_core.storage.StorageBudget;
+import com.microchip.lambda_core.storage.StorageFullException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,9 +46,11 @@ public class ShareController {
     private static final Set<Long> ALLOWED_TTL_SECONDS = Set.of(900L, 3600L, 86400L);
 
     private final ShareService shareService;
+    private final StorageBudget budget;
 
-    public ShareController(ShareService shareService) {
+    public ShareController(ShareService shareService, StorageBudget budget) {
         this.shareService = shareService;
+        this.budget = budget;
     }
 
     @PostMapping
@@ -65,6 +69,7 @@ public class ShareController {
             @PathVariable String name,
             @RequestHeader(value = HttpHeaders.CONTENT_TYPE, required = false) String contentType,
             HttpServletRequest request) throws IOException {
+        budget.requireShareRoom(Math.max(0, request.getContentLengthLong()));
         ShareFile file = shareService.uploadFile(code, name, contentType, request.getInputStream());
         return new ShareFileView(file.getId(), file.getName(), file.getSizeBytes());
     }
@@ -122,6 +127,11 @@ public class ShareController {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ProblemDetail handleDuplicate(DataIntegrityViolationException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "файл с таким именем уже есть");
+    }
+
+    @ExceptionHandler(StorageFullException.class)
+    ProblemDetail handleFull(StorageFullException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INSUFFICIENT_STORAGE, e.getMessage());
     }
 
     @ExceptionHandler(FileTooLargeException.class)
