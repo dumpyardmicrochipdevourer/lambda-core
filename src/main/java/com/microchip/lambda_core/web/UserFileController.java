@@ -9,6 +9,7 @@ import com.microchip.lambda_core.service.exceptions.QuotaExceededException;
 import com.microchip.lambda_core.service.exceptions.UploadOffsetMismatchException;
 import com.microchip.lambda_core.service.exceptions.UserFileNotFoundException;
 import com.microchip.lambda_core.storage.FileTooLargeException;
+import com.microchip.lambda_core.storage.StorageFullException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.UUID;
@@ -96,8 +97,8 @@ public class UserFileController {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
-    @ExceptionHandler(QuotaExceededException.class)
-    ProblemDetail handleQuota(QuotaExceededException e) {
+    @ExceptionHandler({QuotaExceededException.class, StorageFullException.class})
+    ProblemDetail handleQuota(RuntimeException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.INSUFFICIENT_STORAGE, e.getMessage());
     }
 

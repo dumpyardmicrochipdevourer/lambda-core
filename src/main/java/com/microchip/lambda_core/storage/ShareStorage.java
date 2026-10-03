@@ -2,6 +2,8 @@ package com.microchip.lambda_core.storage;
 
 import com.microchip.lambda_core.domain.FileStatus;
 import com.microchip.lambda_core.domain.ShareFile;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,33 +24,47 @@ public class ShareStorage {
 
     private static final int BUFFER_SIZE = 8192;
 
+    // the free-space floor is rechecked this often while a body streams in
+    private static final long DISK_CHECK_EVERY = 4L * 1024 * 1024;
+
     private final Path root;
     private final long maxFileBytes;
+    private final StorageBudget budget;
 
-    public ShareStorage(StorageProperties properties) {
+    private final Counter uploaded;
+
+    public ShareStorage(StorageProperties properties, StorageBudget budget, MeterRegistry registry) {
         this.root = Path.of(properties.root()).resolve("share");
         this.maxFileBytes = properties.maxFileBytes();
+        this.budget = budget;
+        this.uploaded = Counter.builder("lambda.uploaded").baseUnit("bytes").tag("kind", "share").register(registry);
     }
 
     public long write(UUID shareId, UUID fileId, InputStream body) throws IOException {
         Path target = locate(shareId, fileId);
         Files.createDirectories(target.getParent());
+        long total = 0;
         try (OutputStream out = Files.newOutputStream(
                 target, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             byte[] buffer = new byte[BUFFER_SIZE];
-            long total = 0;
             int read;
             while ((read = body.read(buffer)) != -1) {
-                total += read;
                 // checked before writing if file over limit
-                if (total > maxFileBytes) {
+                if (total + read > maxFileBytes) {
                     throw new FileTooLargeException(maxFileBytes);
                 }
+                budget.takeShare(read);
+                total += read;
+                if (total / DISK_CHECK_EVERY != (total - read) / DISK_CHECK_EVERY) {
+                    budget.requireDiskRoom(0);
+                }
                 out.write(buffer, 0, read);
+                uploaded.increment(read);
             }
             return total;
         } catch (IOException | RuntimeException e) {
             Files.deleteIfExists(target);
+            budget.giveBackShare(total);
             throw e;
         }
     }
@@ -76,6 +92,7 @@ public class ShareStorage {
         if (!Files.exists(dir)) {
             return;
         }
+        budget.giveBackShare(StorageBudget.sizeOf(dir));
         // TwT
         try (var paths = Files.walk(dir)) {
             // Files.delete only works on empty dirs, so children must
