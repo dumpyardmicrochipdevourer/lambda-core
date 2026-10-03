@@ -75,6 +75,15 @@ class ShareControllerTest extends IntegrationTest {
         mvc.perform(get("/api/share/ZZZZZZ")).andExpect(status().isNotFound());
     }
 
+    @Test
+    void metricsExposeStorageNumbers() throws Exception {
+        mvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("lambda_share_used_bytes")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("lambda_disk_free_bytes")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("http_server_requests_seconds_count")));
+    }
+
     private String create(int ttl) throws Exception {
         return JsonPath.read(mvc.perform(post("/api/share").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"ttlSeconds\":%d}".formatted(ttl)))

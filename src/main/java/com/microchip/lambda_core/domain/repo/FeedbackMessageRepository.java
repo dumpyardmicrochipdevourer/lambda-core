@@ -10,5 +10,7 @@ public interface FeedbackMessageRepository extends JpaRepository<FeedbackMessage
 
     List<FeedbackMessage> findByReadAtIsNull();
 
+    long countByReadAtIsNull();
+
     List<FeedbackMessage> findAllByOrderByCreatedAtDesc(Pageable page);
 }

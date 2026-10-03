@@ -10,6 +10,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserStorageRepository extends JpaRepository<UserStorage, UUID> {
 
+    @Query("select coalesce(sum(s.usedBytes + s.reservedBytes), 0) from UserStorage s")
+    long sumTaken();
+
+    @Query("select coalesce(sum(s.quotaBytes), 0) from UserStorage s")
+    long sumQuota();
+
     @Modifying
     @Query(value = """
             insert into user_storage (user_id, username, quota_bytes) values (:userId, :username, :quota)
